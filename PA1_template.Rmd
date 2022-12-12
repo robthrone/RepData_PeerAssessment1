@@ -1,25 +1,118 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Course assignment 1"
+author: "Jen Villwock"
+output: html_document
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 
-## Loading and preprocessing the data
+library(tidyverse)
+library(lubridate)
+```
+
+## Load and preprocessing the data 
+
+Downloaded data from github onto computer before reading it into r. Using the lubridate package, 
+transformed the date variable into a date object.
+```{r cars}
+
+activity <- read.csv("C:\\Users\\Rob\\OneDrive\\Documents\\Stats lab\\activity.csv")
+
+activity <- activity %>% 
+  mutate(date = ymd(date))
+  
+```
+
+## Plots and analysis 
+
+First is a histogram of the total number of steps taken each day (excluding missing values). Created a day variable to to group steps data by. Created a steps_per_day variable by group_by day and them getting the sum for each day. 
+
+```{r}
+step_hist <- activity %>% 
+  mutate(dayz = day(date)) %>% 
+  group_by(dayz) %>% 
+  summarise(steps_per_day = sum(steps, na.rm = TRUE)) %>% 
+  ggplot(aes(steps_per_day))
+
+step_hist + geom_histogram(bins = 30)
+
+```
+
+The mean of the total number of steps taken per day is `r mean(step_hist$data$steps_per_day, na.rm = TRUE)` and the median is `r median(step_hist$data$steps_per_day, na.rm = TRUE)`.
+
+## Average daily active pattern
+
+Time series plot of the 5 minute interval steps across the data set. 
+```{r}
+activity %>% 
+  mutate(dayz = day(date)) %>% 
+  group_by(dayz) %>% 
+  summarise(steps_per_day = mean(steps, na.rm = TRUE)) %>%
+  ungroup(.) %>% 
+  ggplot(aes(dayz, steps_per_day))+
+  geom_point()+
+  geom_line()
+
+result <- activity %>% 
+  group_by(interval) %>% 
+  summarise(steps_per_interval = mean(steps, na.rm = TRUE)) %>% 
+  filter(steps_per_interval == max(steps_per_interval))
+
+result
+  
+```
+
+The 5 minute interval across all days with the most steps on average was interval 835 with 206 steps average.
+
+## Imputing missing variables
+
+Just used the mean of each day by each interval for the entire data set to imput missing values for steps.
+```{r}
+new_activity <- activity
+
+new_activity$steps[is.na(new_activity$steps)] <- mean(new_activity$steps,na.rm = TRUE)
+
+```
+
+Comparing the old and new data sets. 
+```{r}
+step_hist <- activity %>% 
+  mutate(dayz = day(date)) %>% 
+  group_by(dayz) %>% 
+  summarise(steps_per_day = sum(steps, na.rm = TRUE)) %>% 
+  ggplot(aes(steps_per_day))
+
+step_hist + geom_histogram(bins = 30)
+
+mean(step_hist$data$steps_per_day, na.rm = TRUE)
+median(step_hist$data$steps_per_day, na.rm = TRUE)
+
+# Imputed data set
+new_step_hist <- new_activity %>% 
+  mutate(dayz = day(date)) %>% 
+  group_by(dayz) %>% 
+  summarise(steps_per_day = sum(steps, na.rm = TRUE)) %>% 
+  ggplot(aes(steps_per_day))
+
+new_step_hist + geom_histogram(bins = 30)
+
+mean(new_step_hist$data$steps_per_day, na.rm = TRUE)
+median(new_step_hist$data$steps_per_day, na.rm = TRUE)
+
+```
+
+After imputing missing values, the key differences are that the average is slightly higher and the median is also sightly higher. Also in the imputed data set, the mean and median are closer than in the original data. 
 
 
+## Differences between weekdays and weekends 
+```{r}
+new_activity %>% 
+  mutate(type_day = weekdays(date)) %>% 
+  mutate(type_day_2 = ifelse(type_day %in%  c("Saturday", "Sunday"), "Weekend", "Weekday")) %>%
+  ggplot(aes(interval, steps))+
+  geom_line()+
+  facet_wrap(~type_day_2)
+  
+```
 
-## What is mean total number of steps taken per day?
-
-
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
